@@ -65,7 +65,7 @@ function addSchema(obj, schemaPart) {
 						if (types[0] === "record") {
 							schemaPart.push({
 								name : k,
-								type : {
+								type : ["null", {
 									type : "array",
 									items : {
 										namespace : _.head(global.currentScope, global.currentScope.length - 1).join("."),
@@ -73,27 +73,29 @@ function addSchema(obj, schemaPart) {
 										type : types[0],
 										fields : []
 									}
-								}
+								}],
+								"default" : null
 							});
 						} else {
 							schemaPart.push({
 								name : k,
-								type : {
+								type : ["null", {
 									type : "array",
 									items : types[0]
-								}
+								}],
+								"default" : null
 							});
 						}
 						target = _.filter(schemaPart, function(x) {
 							return x.name === k;
 						});
 					} else {
-						if (target[0].type.type !== "array") debugger;
-						assert(target[0].type.type === "array");
+						if (target[0].type[1].type !== "array") debugger;
+						assert(target[0].type[1].type === "array");
 					}
 					if (types[0] === "record") {
 						_.forEach(v, function(v2) {
-							addSchema(v2, target[0].type.items.fields);
+							addSchema(v2, target[0].type[1].items.fields);
 						});
 					}
 				}
@@ -104,12 +106,13 @@ function addSchema(obj, schemaPart) {
 				if (target.length === 0) {
 					schemaPart.push({
 						name : k,
-						type : [{
+						type : ["null", {
 							namespace : _.head(global.currentScope, global.currentScope.length - 1).join("."),
 							name : capitalizeFirstLetter(k),
 							type : "record",
 							fields : []
-						}, "null"]
+						}],
+						"default" : null
 					});
 				}
 				target = _.filter(schemaPart, function(x) {
@@ -117,22 +120,23 @@ function addSchema(obj, schemaPart) {
 				});
 				if (target.length !== 1) debugger;
 				assert(target.length === 1);
-				return addSchema(v,target[0].type[0].fields);
+				return addSchema(v,target[0].type[1].fields);
 			}
 			if (target.length === 0) {
 				var type = getPrimitiveType(v);
 				if (type) {
 					schemaPart.push({
 						name : k,
-						type : [type, "null"]
+						type : ["null", type],
+						"default" : null
 					});
 				}
 			} else { // !schemaPart
 				assert(target.length === 1);
 				var type = getPrimitiveType(v);
 				if (type) {
-					if (target[0].type[0] !== type) debugger;
-					assert(target[0].type[0] === type);
+					if (target[0].type[1] !== type) debugger;
+					assert(target[0].type[1] === type);
 				}
 			} // !schemaPart
 		} finally {
@@ -149,5 +153,5 @@ src.pipe(es.split())
 		cb();
 	}))
 	.on("end", function() {
-		console.log(JSON.stringify(schema));
+		console.log(JSON.stringify(schema, null, 2));
 });
